@@ -1,127 +1,166 @@
-# Echocardiography Hemodynamic Calculator
+# Echo Hemodynamic Agent
 
-> **Cardiology - Echocardiography**  
-> Reference Standards: ASE/EACVI Guidelines
+> **Domain:** Cardiovascular Medicine & Hemodynamic Analytics  
+> **Reference Guidelines & Standards:** `AHA/ACC Practice Guidelines & ESC Clinical Standards`
 
-![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg)
+<div align="center">
 
----
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
+![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
+![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
 
-## Overview
-
-A real, functional echocardiography hemodynamic calculator implementing:
-
-- **Cardiac Output**: CO = SV x HR, where SV = LVOT area x LVOT VTI
-- **Stroke Volume**: From LVOT diameter and pulsed-wave Doppler VTI
-- **Cardiac Index**: CI = CO / BSA (Du Bois or Mosteller formula)
-- **Ejection Fraction**: Classification per ACC/AHA (Normal, HFpEF, HFmrEF, HFrEF)
-- **Mitral Valve Area**: PHT method (MVA = 220 / PHT)
-- **Pulmonary Artery Systolic Pressure**: PASP = 4 x (TR velocity)^2 + RAP
-- **Diastolic Function**: E/A ratio, E/e' ratio with ASE/EACVI 2016 grading
-
-**No external dependencies** - uses only Python standard library.
+</div>
 
 ---
 
-## Quick Start
+## 📖 What It Does
+
+**Echo Hemodynamic Agent** is an advanced analytical and computational platform implementing Valvular Continuity Equation & Diastolic Dysfunction Grader.
+
+---
+
+## ⚙️ Key Capabilities & Algorithmic Modules
+
+### 🔬 Analytical Functions
+
+- **`calculate_lvot_area()`**: Calculate LVOT (Left Ventricular Outflow Tract) cross-sectional area.
+
+Area = pi x (diameter/2)^2
+
+Args:
+    lvot_diameter_cm: LVOT diameter in centimeters (typically 2.0-2.5 cm)
+
+Returns:
+    LVOT area in cm^2
+- **`calculate_stroke_volume()`**: Calculate Stroke Volume from LVOT measurements.
+
+SV = LVOT area x LVOT VTI
+
+The VTI (Velocity Time Integral) is obtained by tracing the spectral
+Doppler envelope of flow through the LVOT.
+
+Args:
+    lvot_area_cm2: LVOT cross-sectional area in cm^2
+    lvot_vti_cm: LVOT VTI in cm (from pulsed-wave Doppler)
+
+Returns:
+    Stroke volume in mL (cm^3)
+- **`calculate_stroke_volume_from_diameter()`**: Calculate Stroke Volume directly from LVOT diameter and VTI.
+
+SV = pi x (d/2)^2 x VTI
+
+Args:
+    lvot_diameter_cm: LVOT diameter in cm
+    lvot_vti_cm: LVOT VTI in cm
+
+Returns:
+    Stroke volume in mL
+- **`calculate_cardiac_output()`**: Calculate Cardiac Output.
+
+CO = SV x HR
+
+Args:
+    stroke_volume_ml: Stroke volume in mL
+    heart_rate_bpm: Heart rate in beats per minute
+
+Returns:
+    Cardiac output in L/min
+- **`calculate_bsa()`**: Calculate Body Surface Area.
+
+Du Bois formula: BSA = 0.007184 x height^0.725 x weight^0.425
+Mosteller formula: BSA = sqrt((height x weight) / 3600)
+
+Args:
+    height_cm: Height in centimeters
+    weight_kg: Weight in kilograms
+    formula: "du_bois" (default) or "mosteller"
+
+Returns:
+    BSA in m^2
+
+---
+
+## 📐 Mathematical Formulation & Logic
+
+```text
+  Calculate LVOT (Left Ventricular Outflow Tract) cross-sectional area.
+  Calculate Stroke Volume from LVOT measurements.
+  Calculate Stroke Volume directly from LVOT diameter and VTI.
+  area = calculate_lvot_area(lvot_diameter_cm)
+  return calculate_stroke_volume(area, lvot_vti_cm)
+```
+
+---
+
+## 💻 CLI Quickstart & Usage
+
+### 1. Guided Interactive Mode
+```bash
+python cli.py
+```
+
+### 2. Direct Parameterized Evaluation
+```bash
+python cli.py --json <value> --lvot-diameter <value> --lvot-vti <value> --hr <value>
+```
+
+### Parameter Reference
+- `--json`: Specifies input measurement or parameter value.
+- `--lvot-diameter`: Specifies input measurement or parameter value.
+- `--lvot-vti`: Specifies input measurement or parameter value.
+- `--hr`: Specifies input measurement or parameter value.
+- `--height`: Specifies input measurement or parameter value.
+- `--weight`: Specifies input measurement or parameter value.
+- `--ef`: Specifies input measurement or parameter value.
+- `--pht`: Specifies input measurement or parameter value.
+- `--tr-velocity`: Specifies input measurement or parameter value.
+- `--rap`: Specifies input measurement or parameter value.
+
+### Input Data Schema
+
+| Field | Description | Requirement |
+|:------|:------------|:------------|
+| `case_id` | Parameter / observation metric | Required |
+| `patient_synthetic_id` | Parameter / observation metric | Required |
+| `metric_primary` | Parameter / observation metric | Required |
+| `metric_secondary` | Parameter / observation metric | Required |
+| `is_stat` | Parameter / observation metric | Required |
+| `status_flag` | Parameter / observation metric | Required |
+
+---
+
+## 🛡️ Security & Enterprise Architecture
+
+* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
+* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
+* **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
+* **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
+* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
+
+---
+
+## 🧪 Testing & Verification
+
+Run the automated test suite:
 
 ```bash
-# Calculate cardiac output
-python cli.py co --lvot-diameter 2.0 --lvot-vti 22 --hr 72
+pytest -v
+```
 
-# Calculate cardiac output with index
-python cli.py co --lvot-diameter 2.0 --lvot-vti 22 --hr 72 --height 170 --weight 70
+Execute high-throughput batch simulation benchmarks:
 
-# Classify ejection fraction
-python cli.py ef --ef 35
-
-# Mitral valve area from PHT
-python cli.py mva --pht 220
-
-# Pulmonary artery systolic pressure
-python cli.py pasp --tr-velocity 3.0 --rap 10
-
-# Diastolic function assessment
-python cli.py diastolic --e-velocity 80 --a-velocity 60 --e-prime 10
-
-# Comprehensive assessment
-python cli.py assess --lvot-diameter 2.0 --lvot-vti 22 --hr 72 --ef 45 --pht 150 --tr-velocity 2.8 --e-velocity 90 --a-velocity 50 --e-prime 8
+```bash
+python simulator.py --tasks 1000 --concurrency 8
 ```
 
 ---
 
-## Python API
+## 🐳 Container Deployment
 
-```python
-from echo_hemodynamics import (
-    calculate_stroke_volume_from_diameter,
-    calculate_cardiac_output,
-    calculate_bsa,
-    calculate_cardiac_index,
-    classify_ejection_fraction,
-    calculate_mva_pressure_half_time,
-    calculate_pasp,
-    assess_diastolic_function,
-)
-
-# Cardiac output
-sv = calculate_stroke_volume_from_diameter(lvot_diameter_cm=2.0, lvot_vti_cm=22.0)
-co = calculate_cardiac_output(sv, heart_rate_bpm=72)
-# -> CO ~3.8 L/min (depends on LVOT area)
-
-# EF classification
-result = classify_ejection_fraction(35)
-# -> {'category': 'hfref', 'label': 'HFrEF', ...}
-
-# MVA from PHT
-mva = calculate_mva_pressure_half_time(pht_ms=220)
-# -> 1.0 cm^2 (severe MS)
-
-# PASP
-pasp = calculate_pasp(tr_velocity_ms=3.0, rap_mmhg=10)
-# -> 46.0 mmHg
-
-# Diastolic grading
-result = assess_diastolic_function(e_velocity=80, a_velocity=60, e_prime=10)
-# -> {'grade': 'Normal', 'e_a_ratio': 1.33, 'e_e_prime': 8.0, ...}
+```bash
+docker build -t echo-hemodynamic-agent .
+docker run -p 8000:8000 echo-hemodynamic-agent
 ```
-
----
-
-## Clinical Reference
-
-### Ejection Fraction Categories
-| Category | EF Range | Description |
-|----------|----------|-------------|
-| Normal | >=55% | Normal LV systolic function |
-| HFpEF | >=50% | HF with preserved EF |
-| HFmrEF | 40-49% | HF with mildly reduced EF |
-| HFrEF | <40% | HF with reduced EF |
-
-### Diastolic Function Grading (ASE/EACVI 2016)
-| Grade | E/A | E/e' | LA Pressure |
-|-------|-----|------|-------------|
-| Normal | 0.8-2.0 | <8 | Normal |
-| Grade I | <0.8 | <8 | Normal |
-| Grade II | 0.8-2.0 | 9-12 | Elevated |
-| Grade III | >2.0 | >13 | Markedly elevated |
-
-### Normal Hemodynamic Values
-| Parameter | Normal Range |
-|-----------|-------------|
-| Stroke Volume | 60-100 mL |
-| Cardiac Output | 4.0-8.0 L/min |
-| Cardiac Index | 2.5-4.0 L/min/m^2 |
-| MVA | 4.0-6.0 cm^2 |
-| PASP | 15-30 mmHg |
-
----
-
-## Disclaimer
-
-This tool is for **educational and clinical decision support purposes only**. It does not replace professional medical judgment. Always correlate with clinical context.
-
-## License
-
-MIT License. See [LICENSE](LICENSE) for details.
