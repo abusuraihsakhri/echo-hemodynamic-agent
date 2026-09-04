@@ -97,38 +97,53 @@ Returns:
 
 ## 💻 CLI Quickstart & Usage
 
-### 1. Guided Interactive Mode
+### 1. Calculate Cardiac Output
 ```bash
-python cli.py
+python cli.py co --lvot-diameter 2.0 --lvot-vti 22 --hr 72
 ```
 
-### 2. Direct Parameterized Evaluation
+With JSON output:
 ```bash
-python cli.py --json <value> --lvot-diameter <value> --lvot-vti <value> --hr <value>
+python cli.py co --lvot-diameter 2.0 --lvot-vti 22 --hr 72 --height 170 --weight 70 --json
 ```
 
-### Parameter Reference
-- `--json`: Specifies input measurement or parameter value.
-- `--lvot-diameter`: Specifies input measurement or parameter value.
-- `--lvot-vti`: Specifies input measurement or parameter value.
-- `--hr`: Specifies input measurement or parameter value.
-- `--height`: Specifies input measurement or parameter value.
-- `--weight`: Specifies input measurement or parameter value.
-- `--ef`: Specifies input measurement or parameter value.
-- `--pht`: Specifies input measurement or parameter value.
-- `--tr-velocity`: Specifies input measurement or parameter value.
-- `--rap`: Specifies input measurement or parameter value.
+### 2. Classify Ejection Fraction
+```bash
+python cli.py ef --ef 45
+```
 
-### Input Data Schema
+### 3. Calculate Mitral Valve Area (PHT Method)
+```bash
+python cli.py mva --pht 220
+```
 
-| Field | Description | Requirement |
-|:------|:------------|:------------|
-| `case_id` | Parameter / observation metric | Required |
-| `patient_synthetic_id` | Parameter / observation metric | Required |
-| `metric_primary` | Parameter / observation metric | Required |
-| `metric_secondary` | Parameter / observation metric | Required |
-| `is_stat` | Parameter / observation metric | Required |
-| `status_flag` | Parameter / observation metric | Required |
+### 4. Calculate Pulmonary Artery Systolic Pressure
+```bash
+python cli.py pasp --tr-velocity 3.0 --rap 10
+```
+
+### 5. Assess Diastolic Function
+```bash
+python cli.py diastolic --e-velocity 80 --a-velocity 60 --e-prime 10
+```
+
+### 6. Comprehensive Hemodynamic Assessment
+```bash
+python cli.py assess --lvot-diameter 2.0 --lvot-vti 22 --hr 72 --ef 45 --pht 150
+```
+
+### CLI Commands
+
+| Command | Description | Key Parameters |
+|:--------|:------------|:---------------|
+| `co` | Calculate cardiac output/index | `--lvot-diameter`, `--lvot-vti`, `--hr`, `--height`, `--weight` |
+| `ef` | Classify ejection fraction | `--ef` |
+| `mva` | Mitral valve area (PHT method) | `--pht` |
+| `pasp` | Pulmonary artery systolic pressure | `--tr-velocity`, `--rap` |
+| `diastolic` | Diastolic function assessment | `--e-velocity`, `--a-velocity`, `--e-prime`, `--la-volume-index`, `--tr-velocity` |
+| `assess` | Comprehensive hemodynamic assessment | All of the above |
+
+All commands support `--json` flag for JSON output.
 
 ---
 
@@ -150,10 +165,20 @@ Run the automated test suite:
 pytest -v
 ```
 
+Run tests for the core hemodynamic calculations:
+```bash
+pytest test_echo_hemodynamics.py -v
+```
+
+Run tests for the agent system:
+```bash
+pytest tests/ -v
+```
+
 Execute high-throughput batch simulation benchmarks:
 
 ```bash
-python simulator.py --tasks 1000 --concurrency 8
+python simulator.py 1000
 ```
 
 ---
@@ -162,5 +187,14 @@ python simulator.py --tasks 1000 --concurrency 8
 
 ```bash
 docker build -t echo-hemodynamic-agent .
-docker run -p 8000:8000 echo-hemodynamic-agent
+docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key echo-hemodynamic-agent
 ```
+
+The container exposes a FastAPI REST API on port 8000 with endpoints:
+- `GET /health` - Health check
+- `POST /api/audit` - Process a task payload
+- `POST /api/chat` - Query the supervisory chat
+- `GET /api/audit/logs` - View audit trail
+- `GET /metrics` - System metrics
+
+**Note:** Set `AUDIT_SECRET_KEY` environment variable for persistent audit integrity across restarts.

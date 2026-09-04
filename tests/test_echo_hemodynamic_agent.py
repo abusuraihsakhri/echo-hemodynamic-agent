@@ -59,7 +59,7 @@ def test_supervisor_consensus_and_audit():
     # Verify cryptographic audit trail
     assert AuditLogger.verify_integrity() is True
 
-    # CLI tests
-    assert main(["audit", "--task-id", "CLI-TEST-01"]) == 0
-    assert main(["chat", "Explain", "specifications"]) == 0
-    assert main(["verify-audit"]) == 0
+    # CLI tests - using valid echo-hemodynamics commands
+    assert main(["co", "--lvot-diameter", "2.0", "--lvot-vti", "22", "--hr", "72"]) == 0
+    assert main(["ef", "--ef", "45"]) == 0
+    assert main(["assess", "--ef", "35", "--pht", "200"]) == 0
