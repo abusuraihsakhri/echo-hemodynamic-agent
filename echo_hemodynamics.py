@@ -30,10 +30,10 @@ from typing import Dict, Any, Optional
 
 EF_CATEGORIES = {
     "normal": {"min": 55, "max": 70, "label": "Normal LVEF", "description": "Normal left ventricular systolic function"},
-    "hfmrEF": {"min": 40, "max": 49, "label": "HFmrEF", "description": "Heart failure with mildly reduced ejection fraction (40-49%)"},
-    "hfref": {"min": 0, "max": 39, "label": "HFrEF", "description": "Heart failure with reduced ejection fraction (<40%)"},
-    "hfpef": {"min": 50, "max": 100, "label": "HFpEF", "description": "Heart failure with preserved ejection fraction (>=50%)"},
-    "hyperdynamic": {"min": 70, "max": 100, "label": "Hyperdynamic", "description": "Hyperdynamic LVEF (>70%); consider sepsis, anemia, thyrotoxicosis"},
+    "hfmrEF": {"min": 40, "max": 49, "label": "HFmrEF", "description": "LVEF 40-49%; the HFmrEF diagnosis requires clinical evidence of heart failure"},
+    "hfref": {"min": 0, "max": 39, "label": "HFrEF", "description": "LVEF below 40%; the HFrEF diagnosis requires clinical evidence of heart failure"},
+    "hfpef": {"min": 50, "max": 100, "label": "HFpEF", "description": "LVEF in preserved range; HFpEF cannot be diagnosed from LVEF alone"},
+    "hyperdynamic": {"min": 70, "max": 100, "label": "Hyperdynamic", "description": "LVEF at least 70%; assess physiology and acquisition context"},
 }
 
 
@@ -77,6 +77,12 @@ DIASTOLIC_GRADES = {
 # CORE CALCULATION FUNCTIONS
 # =============================================================================
 
+def _finite(value: float, name: str) -> None:
+    """Reject NaN and infinity; comparisons alone do not reject these values."""
+    if not isinstance(value, (int, float)) or not math.isfinite(value):
+        raise ValueError(f"{name} must be a finite number")
+
+
 def calculate_lvot_area(lvot_diameter_cm: float) -> float:
     """
     Calculate LVOT (Left Ventricular Outflow Tract) cross-sectional area.
@@ -89,6 +95,7 @@ def calculate_lvot_area(lvot_diameter_cm: float) -> float:
     Returns:
         LVOT area in cm^2
     """
+    _finite(lvot_diameter_cm, "LVOT diameter")
     if lvot_diameter_cm <= 0:
         raise ValueError("LVOT diameter must be positive")
     return math.pi * (lvot_diameter_cm / 2.0) ** 2
@@ -110,6 +117,8 @@ def calculate_stroke_volume(lvot_area_cm2: float, lvot_vti_cm: float) -> float:
     Returns:
         Stroke volume in mL (cm^3)
     """
+    _finite(lvot_area_cm2, "LVOT area")
+    _finite(lvot_vti_cm, "LVOT VTI")
     if lvot_area_cm2 <= 0:
         raise ValueError("LVOT area must be positive")
     if lvot_vti_cm <= 0:
@@ -147,6 +156,8 @@ def calculate_cardiac_output(stroke_volume_ml: float, heart_rate_bpm: float) -> 
     Returns:
         Cardiac output in L/min
     """
+    _finite(stroke_volume_ml, "Stroke volume")
+    _finite(heart_rate_bpm, "Heart rate")
     if stroke_volume_ml <= 0:
         raise ValueError("Stroke volume must be positive")
     if heart_rate_bpm <= 0:
@@ -169,6 +180,8 @@ def calculate_bsa(height_cm: float, weight_kg: float, formula: str = "du_bois") 
     Returns:
         BSA in m^2
     """
+    _finite(height_cm, "Height")
+    _finite(weight_kg, "Weight")
     if height_cm <= 0:
         raise ValueError("Height must be positive")
     if weight_kg <= 0:
@@ -197,6 +210,8 @@ def calculate_cardiac_index(cardiac_output_lpm: float, bsa_m2: float) -> float:
     Returns:
         Cardiac index in L/min/m^2
     """
+    _finite(cardiac_output_lpm, "Cardiac output")
+    _finite(bsa_m2, "BSA")
     if bsa_m2 <= 0:
         raise ValueError("BSA must be positive")
     if cardiac_output_lpm < 0:
@@ -219,6 +234,7 @@ def classify_ejection_fraction(ef_percent: float) -> Dict[str, Any]:
     Returns:
         Dictionary with EF classification
     """
+    _finite(ef_percent, "EF")
     if ef_percent < 0 or ef_percent > 100:
         raise ValueError("EF must be between 0 and 100")
 
@@ -239,6 +255,7 @@ def classify_ejection_fraction(ef_percent: float) -> Dict[str, Any]:
         "category": category,
         "label": cat_info["label"],
         "description": cat_info["description"],
+        "clinical_caveat": "LVEF alone does not establish or exclude a heart failure diagnosis.",
     }
 
 
@@ -261,6 +278,7 @@ def calculate_mva_pressure_half_time(pht_ms: float) -> float:
     Returns:
         Mitral valve area in cm^2
     """
+    _finite(pht_ms, "Pressure half-time")
     if pht_ms <= 0:
         raise ValueError("Pressure half-time must be positive")
     return 220.0 / pht_ms
@@ -276,6 +294,9 @@ def classify_mva(mva_cm2: float) -> Dict[str, Any]:
     Returns:
         Dictionary with severity classification
     """
+    _finite(mva_cm2, "Mitral valve area")
+    if mva_cm2 <= 0:
+        raise ValueError("Mitral valve area must be positive")
     if mva_cm2 >= 4.0:
         severity = "normal"
         description = "Normal mitral valve area"
@@ -318,6 +339,10 @@ def calculate_pasp(tr_velocity_ms: float, rap_mmhg: float = 10.0) -> float:
     Returns:
         PASP in mmHg
     """
+    _finite(tr_velocity_ms, "TR velocity")
+    _finite(rap_mmhg, "Right atrial pressure")
+    if rap_mmhg < 0:
+        raise ValueError("Right atrial pressure cannot be negative")
     if tr_velocity_ms < 0:
         raise ValueError("TR velocity cannot be negative")
     return 4.0 * (tr_velocity_ms ** 2) + rap_mmhg
@@ -333,6 +358,9 @@ def classify_pasp(pasp_mmhg: float) -> Dict[str, Any]:
     Returns:
         Dictionary with classification
     """
+    _finite(pasp_mmhg, "PASP")
+    if pasp_mmhg < 0:
+        raise ValueError("PASP cannot be negative")
     if pasp_mmhg <= 30:
         classification = "normal"
         description = "Normal PASP"
@@ -341,18 +369,19 @@ def classify_pasp(pasp_mmhg: float) -> Dict[str, Any]:
         description = "Borderline elevated PASP"
     elif pasp_mmhg <= 50:
         classification = "mild_ph"
-        description = "Mildly elevated - possible pulmonary hypertension"
+        description = "Estimated PASP above usual range; clinical evaluation required"
     elif pasp_mmhg <= 60:
         classification = "moderate_ph"
-        description = "Moderately elevated - likely pulmonary hypertension"
+        description = "Estimated PASP elevated; not diagnostic of pulmonary hypertension"
     else:
         classification = "severe_ph"
-        description = "Severely elevated - significant pulmonary hypertension"
+        description = "Estimated PASP markedly elevated; further evaluation required"
 
     return {
         "pasp_mmhg": round(pasp_mmhg, 1),
         "classification": classification,
         "description": description,
+        "clinical_caveat": "Doppler-estimated pressure cannot independently diagnose pulmonary hypertension.",
     }
 
 
@@ -388,6 +417,20 @@ def assess_diastolic_function(
     Returns:
         Dictionary with diastolic function assessment
     """
+    _finite(e_velocity, "Mitral E velocity")
+    _finite(a_velocity, "Mitral A velocity")
+    if e_prime is not None:
+        _finite(e_prime, "Tissue Doppler e-prime")
+        if e_prime <= 0:
+            raise ValueError("Tissue Doppler e-prime must be positive")
+    if la_volume_index is not None:
+        _finite(la_volume_index, "LA volume index")
+        if la_volume_index < 0:
+            raise ValueError("LA volume index cannot be negative")
+    if tr_velocity is not None:
+        _finite(tr_velocity, "TR velocity")
+        if tr_velocity < 0:
+            raise ValueError("TR velocity cannot be negative")
     if e_velocity <= 0 or a_velocity <= 0:
         raise ValueError("E and A velocities must be positive")
 
@@ -414,6 +457,11 @@ def assess_diastolic_function(
     # Grade diastolic function
     grade = _grade_diastolic(e_a_ratio, e_e_prime, la_volume_index, tr_velocity)
     result.update(grade)
+    result["clinical_caveat"] = (
+        "Legacy simplified Doppler pattern heuristic, not a complete ASE 2025 "
+        "diastolic function assessment. Do not infer HFpEF or filling pressure "
+        "diagnosis from these inputs alone."
+    )
 
     return result
 
@@ -532,13 +580,19 @@ def comprehensive_hemodynamic_assessment(
     result = {"parameters": {}, "findings": [], "warnings": []}
 
     # Cardiac output/index
-    if lvot_diameter_cm and lvot_vti_cm and heart_rate_bpm:
+    if any(v is not None for v in (lvot_diameter_cm, lvot_vti_cm, heart_rate_bpm)) and not all(
+        v is not None for v in (lvot_diameter_cm, lvot_vti_cm, heart_rate_bpm)
+    ):
+        result["warnings"].append("Incomplete LVOT diameter, VTI, or heart-rate set; cardiac output not calculated")
+    if all(v is not None for v in (lvot_diameter_cm, lvot_vti_cm, heart_rate_bpm)):
         sv = calculate_stroke_volume_from_diameter(lvot_diameter_cm, lvot_vti_cm)
         co = calculate_cardiac_output(sv, heart_rate_bpm)
         result["parameters"]["stroke_volume_ml"] = round(sv, 1)
         result["parameters"]["cardiac_output_lpm"] = round(co, 2)
 
-        if height_cm and weight_kg:
+        if (height_cm is None) != (weight_kg is None):
+            result["warnings"].append("Both height and weight are required for cardiac index")
+        if height_cm is not None and weight_kg is not None:
             bsa = calculate_bsa(height_cm, weight_kg)
             ci = calculate_cardiac_index(co, bsa)
             result["parameters"]["bsa_m2"] = round(bsa, 2)
@@ -569,15 +623,18 @@ def comprehensive_hemodynamic_assessment(
         pasp_class = classify_pasp(pasp)
         result["parameters"]["pasp"] = pasp_class
         if pasp > 40:
-            result["warnings"].append(f"Elevated PASP ({pasp:.1f} mmHg) - {pasp_class['description']}")
+            result["warnings"].append(f"Estimated elevated PASP ({pasp:.1f} mmHg) - not a diagnosis of pulmonary hypertension")
             result["findings"].append(pasp_class["description"])
 
     # Diastolic function
-    if e_velocity and a_velocity:
+    if (e_velocity is None) != (a_velocity is None):
+        result["warnings"].append("Both E and A velocities are required for diastolic assessment")
+    if e_velocity is not None and a_velocity is not None:
         diastolic = assess_diastolic_function(
             e_velocity, a_velocity, e_prime, la_volume_index, tr_velocity_ms
         )
         result["parameters"]["diastolic_function"] = diastolic
+        result["warnings"].append(diastolic["clinical_caveat"])
         if "Grade II" in diastolic.get("grade", "") or "Grade III" in diastolic.get("grade", ""):
             result["warnings"].append(f"{diastolic['grade']}: {diastolic['description']}")
         result["findings"].append(f"Diastolic function: {diastolic.get('grade', 'N/A')} - {diastolic.get('grade_label', '')}")

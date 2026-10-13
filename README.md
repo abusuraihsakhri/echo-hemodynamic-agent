@@ -1,200 +1,66 @@
 # Echo Hemodynamic Agent
 
-> **Domain:** Cardiovascular Medicine & Hemodynamic Analytics  
-> **Reference Guidelines & Standards:** `AHA/ACC Practice Guidelines & ESC Clinical Standards`
+Echocardiography hemodynamic calculator with a dependency-free browser interface, Python CLI, and an optional FastAPI audit service.
 
-<div align="center">
+**Use for education, research, and synthetic test data only.** Results are arithmetic estimates rather than clinical diagnoses or treatment recommendations. Do not submit patient identifiers or protected health information.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+## Capabilities
 
-</div>
+- **Browser calculator:** LVOT area, stroke volume, cardiac output, Du Bois BSA, cardiac index, pressure-half-time estimated mitral valve area, estimated RV systolic pressure, LVEF, E/A and E/e-prime ratios.
+- **Python calculator:** Equivalent core measurements, basic EF-range classification and a **legacy simplified** diastolic-pattern heuristic.
+- **API / agent audit:** Separate generic numerical threshold demonstration, synthetic case processing, HMAC-chained audit events and health/metrics endpoints. Its generic thresholds are **not** validated echo severity criteria.
+- **Tests:** Python pytest suite, Node-based browser arithmetic tests and GitHub Actions CI.
 
----
+The browser calculator uses native JavaScript and no backend, Pyodide, analytics or third-party scripts. Pressing **Calculate** processes measurements locally; **Download results** produces a local JSON file. The separate optional API form transmits data only when submitted to a running same-origin FastAPI server. The simple identifier-pattern guard is **not** a substitute for complete PHI de-identification.
 
-## 📖 What It Does
+## Browser use
 
-**Echo Hemodynamic Agent** is an advanced analytical and computational platform implementing Valvular Continuity Equation & Diastolic Dysfunction Grader.
+Open `web/index.html` in a modern browser and enter the required LVOT diameter, LVOT VTI, and heart rate. Optional measurement groups require their corresponding paired fields. The standalone calculator works without network access.
 
----
+GitHub Pages deployment is configured in `.github/workflows/pages.yml`. A public application link should be added only after GitHub Pages is enabled and the deployed workflow is verified.
 
-## ⚙️ Key Capabilities & Algorithmic Modules
+## Python calculator
 
-### 🔬 Analytical Functions
+Python 3.10–3.12 is tested in CI. Install from the repository root:
 
-- **`calculate_lvot_area()`**: Calculate LVOT (Left Ventricular Outflow Tract) cross-sectional area.
-
-Area = pi x (diameter/2)^2
-
-Args:
-    lvot_diameter_cm: LVOT diameter in centimeters (typically 2.0-2.5 cm)
-
-Returns:
-    LVOT area in cm^2
-- **`calculate_stroke_volume()`**: Calculate Stroke Volume from LVOT measurements.
-
-SV = LVOT area x LVOT VTI
-
-The VTI (Velocity Time Integral) is obtained by tracing the spectral
-Doppler envelope of flow through the LVOT.
-
-Args:
-    lvot_area_cm2: LVOT cross-sectional area in cm^2
-    lvot_vti_cm: LVOT VTI in cm (from pulsed-wave Doppler)
-
-Returns:
-    Stroke volume in mL (cm^3)
-- **`calculate_stroke_volume_from_diameter()`**: Calculate Stroke Volume directly from LVOT diameter and VTI.
-
-SV = pi x (d/2)^2 x VTI
-
-Args:
-    lvot_diameter_cm: LVOT diameter in cm
-    lvot_vti_cm: LVOT VTI in cm
-
-Returns:
-    Stroke volume in mL
-- **`calculate_cardiac_output()`**: Calculate Cardiac Output.
-
-CO = SV x HR
-
-Args:
-    stroke_volume_ml: Stroke volume in mL
-    heart_rate_bpm: Heart rate in beats per minute
-
-Returns:
-    Cardiac output in L/min
-- **`calculate_bsa()`**: Calculate Body Surface Area.
-
-Du Bois formula: BSA = 0.007184 x height^0.725 x weight^0.425
-Mosteller formula: BSA = sqrt((height x weight) / 3600)
-
-Args:
-    height_cm: Height in centimeters
-    weight_kg: Weight in kilograms
-    formula: "du_bois" (default) or "mosteller"
-
-Returns:
-    BSA in m^2
-
----
-
-## 📐 Mathematical Formulation & Logic
-
-```text
-  Calculate LVOT (Left Ventricular Outflow Tract) cross-sectional area.
-  Calculate Stroke Volume from LVOT measurements.
-  Calculate Stroke Volume directly from LVOT diameter and VTI.
-  area = calculate_lvot_area(lvot_diameter_cm)
-  return calculate_stroke_volume(area, lvot_vti_cm)
-```
-
----
-
-## 💻 CLI Quickstart & Usage
-
-### 1. Calculate Cardiac Output
 ```bash
-python cli.py co --lvot-diameter 2.0 --lvot-vti 22 --hr 72
-```
-
-With JSON output:
-```bash
-python cli.py co --lvot-diameter 2.0 --lvot-vti 22 --hr 72 --height 170 --weight 70 --json
-```
-
-### 2. Classify Ejection Fraction
-```bash
+python -m pip install -e ".[api,test]"
+python cli.py co --lvot-diameter 2.0 --lvot-vti 22 --hr 72 --json
 python cli.py ef --ef 45
-```
-
-### 3. Calculate Mitral Valve Area (PHT Method)
-```bash
 python cli.py mva --pht 220
-```
-
-### 4. Calculate Pulmonary Artery Systolic Pressure
-```bash
-python cli.py pasp --tr-velocity 3.0 --rap 10
-```
-
-### 5. Assess Diastolic Function
-```bash
+python cli.py pasp --tr-velocity 3 --rap 10
 python cli.py diastolic --e-velocity 80 --a-velocity 60 --e-prime 10
+python cli.py assess --ef 45 --pht 150
 ```
 
-### 6. Comprehensive Hemodynamic Assessment
-```bash
-python cli.py assess --lvot-diameter 2.0 --lvot-vti 22 --hr 72 --ef 45 --pht 150
-```
+The installed `echo-hemodynamics` console script provides the same calculator commands. The existing `echo-hemodynamic-engine` and `echo_hemodynamic_agent_app.py` entry points remain available for the separate generic agent audit workflow.
 
-### CLI Commands
+**Clinical interpretation limitations:** The E/A and E/e-prime ratios alone do not establish diastolic function grade or heart failure with preserved ejection fraction. The Python grading method is a legacy heuristic, **not** an implementation of the [2025 ASE diastolic function guideline](https://www.asecho.org/guideline/left-ventricular-diastolic-function-by-echo/), which superseded the 2016 approach. Pressure-half-time mitral valve area and Doppler RV systolic pressure estimates have important acquisition and clinical limitations; estimated RVSP does not independently diagnose pulmonary hypertension.
 
-| Command | Description | Key Parameters |
-|:--------|:------------|:---------------|
-| `co` | Calculate cardiac output/index | `--lvot-diameter`, `--lvot-vti`, `--hr`, `--height`, `--weight` |
-| `ef` | Classify ejection fraction | `--ef` |
-| `mva` | Mitral valve area (PHT method) | `--pht` |
-| `pasp` | Pulmonary artery systolic pressure | `--tr-velocity`, `--rap` |
-| `diastolic` | Diastolic function assessment | `--e-velocity`, `--a-velocity`, `--e-prime`, `--la-volume-index`, `--tr-velocity` |
-| `assess` | Comprehensive hemodynamic assessment | All of the above |
-
-All commands support `--json` flag for JSON output.
-
----
-
-## 🛡️ Security & Enterprise Architecture
-
-* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
-* **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
-* **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
-* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
-
----
-
-## 🧪 Testing & Verification
-
-Run the automated test suite:
+## Optional local API
 
 ```bash
-pytest -v
+python -m pip install -e ".[api]"
+uvicorn agents.api:app --host 127.0.0.1 --port 8000
 ```
 
-Run tests for the core hemodynamic calculations:
-```bash
-pytest test_echo_hemodynamics.py -v
-```
+Open `http://127.0.0.1:8000/` for the calculator and optional same-origin audit form. API endpoints are `GET /health`, `POST /api/audit`, `POST /api/chat`, `GET /api/audit/logs`, and `GET /metrics`. The API is designed for local synthetic examples and is **not** an authenticated, HIPAA-compliant service. Do not expose it to untrusted networks.
 
-Run tests for the agent system:
-```bash
-pytest tests/ -v
-```
-
-Execute high-throughput batch simulation benchmarks:
+For Docker Compose, generate a unique audit key and set `AUDIT_SECRET_KEY` in your environment or an ignored `.env` file before running `docker compose up --build`. The default Compose port binding is localhost-only. Without a configured audit key, direct Python execution creates an ephemeral key: historic chain signatures will not survive restarts.
 
 ```bash
-python simulator.py 1000
+python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
----
-
-## 🐳 Container Deployment
+For automated tests:
 
 ```bash
-docker build -t echo-hemodynamic-agent .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key echo-hemodynamic-agent
+pytest -q
+node --test tests/test_browser_calculator.cjs
 ```
 
-The container exposes a FastAPI REST API on port 8000 with endpoints:
-- `GET /health` - Health check
-- `POST /api/audit` - Process a task payload
-- `POST /api/chat` - Query the supervisory chat
-- `GET /api/audit/logs` - View audit trail
-- `GET /metrics` - System metrics
+## Technology and license
 
-**Note:** Set `AUDIT_SECRET_KEY` environment variable for persistent audit integrity across restarts.
+Python (standard-library calculations), Pydantic 2, optional FastAPI/Uvicorn, plain HTML/CSS/JavaScript, Node test runner, and GitHub Actions. The static calculator is intended for current desktop and mobile browsers supporting ES2020 and the standard DOM APIs.
+
+Licensed under [MIT](LICENSE).

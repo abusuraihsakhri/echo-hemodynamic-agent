@@ -2,13 +2,16 @@
 FastAPI REST API Server for Echo Hemodynamic Agent.
 """
 from typing import Dict, Any, List
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from .base import AuditLogger, PHIGuard
+from .base import AuditLogger, PHIGuard, SecurityException
 from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
 
 supervisor = SystemSupervisor(model_provider="mock")
+WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 
 app = FastAPI(
     title="Echo Hemodynamic Agent API",
@@ -19,6 +22,16 @@ app = FastAPI(
 
 class ChatRequest(BaseModel):
     query: str
+
+
+@app.get("/", include_in_schema=False)
+def calculator_page():
+    return FileResponse(WEB_DIR / "index.html", media_type="text/html")
+
+
+@app.get("/calculator.js", include_in_schema=False)
+def calculator_script():
+    return FileResponse(WEB_DIR / "calculator.js", media_type="application/javascript")
 
 
 @app.get("/health")
@@ -37,7 +50,10 @@ def metrics():
 
 @app.post("/api/audit")
 def api_audit(payload: SystemTaskPayload):
-    dossier = supervisor.process_task(payload)
+    try:
+        dossier = supervisor.process_task(payload)
+    except SecurityException:
+        raise HTTPException(status_code=400, detail="Sensitive identifiers are not accepted")
     return dossier.to_dict()
 
 

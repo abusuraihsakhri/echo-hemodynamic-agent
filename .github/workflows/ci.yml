@@ -1,4 +1,4 @@
-name: Echo Hemodynamic Engine CI/CD & Security Verification
+name: Echo Hemodynamic Engine CI
 
 on:
   push:
@@ -24,11 +24,20 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install fastapi uvicorn pydantic pytest
+        pip install -e ".[api,test]" build
+
+    - name: Package wheel and check installation
+      run: |
+        python -m build --wheel
+        python -m pip check
+        python -m compileall -q agents echo_hemodynamic_agent echo_hemodynamics.py cli.py
 
     - name: Run Pytest Suite
       run: |
         pytest -v
+
+    - name: Browser arithmetic tests
+      run: node --test tests/test_browser_calculator.cjs
 
     - name: Security SAST & Zero-PHI Audit
       run: |

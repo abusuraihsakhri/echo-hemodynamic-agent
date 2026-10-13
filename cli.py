@@ -256,6 +256,10 @@ def main(argv=None):
     p_all.add_argument("--e-prime", type=float, help="e' velocity cm/s")
     p_all.add_argument("--la-volume-index", type=float, help="LA volume index mL/m^2")
 
+    # Allow --json both before and after the selected subcommand.
+    for command_parser in (p_co, p_ef, p_mva, p_pasp, p_diast, p_all):
+        command_parser.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
+
     args = parser.parse_args(argv)
 
     commands = {
