@@ -33,3 +33,32 @@ jobs:
           path: ./web
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Smoke-test published HTML and JavaScript
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          python - <<'PY'
+          import os
+          import time
+          from urllib.request import urlopen
+
+          base = os.environ["PAGE_URL"].rstrip("/") + "/"
+          for path, expected in [
+              ("", b"Echo Hemodynamics"),
+              ("calculator.js", b"function calculate"),
+          ]:
+              url = base + path
+              for attempt in range(20):
+                  try:
+                      with urlopen(url, timeout=10) as response:
+                          data = response.read()
+                          if response.status == 200 and expected in data:
+                              print("Verified", url)
+                              break
+                  except Exception as error:
+                      print("Attempt", attempt + 1, url, error)
+                  time.sleep(5)
+              else:
+                  raise SystemExit("Published asset not verified: " + url)
+          PY
