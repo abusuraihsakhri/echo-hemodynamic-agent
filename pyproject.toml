@@ -34,4 +34,7 @@ Repository = "https://github.com/abusuraihsakhri/echo-hemodynamic-agent.git"
 py-modules = ["echo_hemodynamics", "cli", "enrichment", "simulator"]
 
 [tool.setuptools.packages.find]
-include = ["agents", "echo_hemodynamic_agent"]
+include = ["agents", "echo_hemodynamic_agent", "web"]
+
+[tool.setuptools.package-data]
+web = ["*.html", "*.js"]
