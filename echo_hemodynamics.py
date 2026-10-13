@@ -30,10 +30,10 @@ from typing import Dict, Any, Optional
 
 EF_CATEGORIES = {
     "normal": {"min": 55, "max": 70, "label": "Normal LVEF", "description": "Normal left ventricular systolic function"},
-    "hfmrEF": {"min": 40, "max": 49, "label": "HFmrEF", "description": "Heart failure with mildly reduced ejection fraction (40-49%)"},
-    "hfref": {"min": 0, "max": 39, "label": "HFrEF", "description": "Heart failure with reduced ejection fraction (<40%)"},
-    "hfpef": {"min": 50, "max": 100, "label": "HFpEF", "description": "Heart failure with preserved ejection fraction (>=50%)"},
-    "hyperdynamic": {"min": 70, "max": 100, "label": "Hyperdynamic", "description": "Hyperdynamic LVEF (>70%); consider sepsis, anemia, thyrotoxicosis"},
+    "hfmrEF": {"min": 40, "max": 49, "label": "HFmrEF", "description": "LVEF 40-49%; the HFmrEF diagnosis requires clinical evidence of heart failure"},
+    "hfref": {"min": 0, "max": 39, "label": "HFrEF", "description": "LVEF below 40%; the HFrEF diagnosis requires clinical evidence of heart failure"},
+    "hfpef": {"min": 50, "max": 100, "label": "HFpEF", "description": "LVEF in preserved range; HFpEF cannot be diagnosed from LVEF alone"},
+    "hyperdynamic": {"min": 70, "max": 100, "label": "Hyperdynamic", "description": "LVEF at least 70%; assess physiology and acquisition context"},
 }
 
 
@@ -255,6 +255,7 @@ def classify_ejection_fraction(ef_percent: float) -> Dict[str, Any]:
         "category": category,
         "label": cat_info["label"],
         "description": cat_info["description"],
+        "clinical_caveat": "LVEF alone does not establish or exclude a heart failure diagnosis.",
     }
 
 
@@ -368,18 +369,19 @@ def classify_pasp(pasp_mmhg: float) -> Dict[str, Any]:
         description = "Borderline elevated PASP"
     elif pasp_mmhg <= 50:
         classification = "mild_ph"
-        description = "Mildly elevated - possible pulmonary hypertension"
+        description = "Estimated PASP above usual range; clinical evaluation required"
     elif pasp_mmhg <= 60:
         classification = "moderate_ph"
-        description = "Moderately elevated - likely pulmonary hypertension"
+        description = "Estimated PASP elevated; not diagnostic of pulmonary hypertension"
     else:
         classification = "severe_ph"
-        description = "Severely elevated - significant pulmonary hypertension"
+        description = "Estimated PASP markedly elevated; further evaluation required"
 
     return {
         "pasp_mmhg": round(pasp_mmhg, 1),
         "classification": classification,
         "description": description,
+        "clinical_caveat": "Doppler-estimated pressure cannot independently diagnose pulmonary hypertension.",
     }
 
 
@@ -621,7 +623,7 @@ def comprehensive_hemodynamic_assessment(
         pasp_class = classify_pasp(pasp)
         result["parameters"]["pasp"] = pasp_class
         if pasp > 40:
-            result["warnings"].append(f"Elevated PASP ({pasp:.1f} mmHg) - {pasp_class['description']}")
+            result["warnings"].append(f"Estimated elevated PASP ({pasp:.1f} mmHg) - not a diagnosis of pulmonary hypertension")
             result["findings"].append(pasp_class["description"])
 
     # Diastolic function
