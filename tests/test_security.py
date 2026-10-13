@@ -188,3 +188,28 @@ class TestSupervisorSecurity:
         )
         with pytest.raises(SecurityException):
             supervisor.process_task(payload)
+
+
+def test_audit_detects_metadata_tampering_with_unbroken_chain():
+    trail = AuditTrail(secret_key="test-secret-key")
+    trail.log("actor1", "tier1", "EVENT_1", {"data": "value1"})
+    trail.logs[0]["event_type"] = "FORGED_EVENT"
+    assert trail.verify_integrity() is False
+
+
+def test_audit_detects_recomputed_links_without_hmac_key():
+    trail = AuditTrail(secret_key="test-secret-key")
+    trail.log("actor1", "tier1", "EVENT_1", {"data": "value1"})
+    trail.log("actor2", "tier1", "EVENT_2", {"data": "value2"})
+    trail.logs[0]["current_hash"] = "0" * 64
+    trail.logs[1]["prev_hash"] = "0" * 64
+    assert trail.verify_integrity() is False
+
+
+def test_audit_log_access_is_read_only_snapshot():
+    trail = AuditTrail(secret_key="test-secret-key")
+    returned = trail.log("actor1", "tier1", "EVENT_1", {"data": "value1"})
+    returned["actor"] = "TAMPERED"
+    trail.get_trail()[0]["actor"] = "TAMPERED"
+    assert trail.verify_integrity() is True
+    assert trail.get_trail()[0]["actor"] == "actor1"
