@@ -1,14 +1,11 @@
-version: '3.8'
-
 services:
   echo-hemodynamic-engine:
     build: .
     container_name: echo-hemodynamic-engine
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
-      - AUDIT_SECRET_KEY=echo-hemodynamic-engine-prod-audit-key-2026
-      - MODEL_PROVIDER=mock
+      AUDIT_SECRET_KEY: ${AUDIT_SECRET_KEY:?Set AUDIT_SECRET_KEY in your environment or .env}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
