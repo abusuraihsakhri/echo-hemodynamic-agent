@@ -1,5 +1,7 @@
 # Echo Hemodynamic Agent
 
+### [Open the Live Application →](https://abusuraihsakhri.github.io/echo-hemodynamic-agent/)
+
 Echocardiography hemodynamic calculator with a dependency-free browser interface, Python CLI, and an optional FastAPI audit service.
 
 **Use for education, research, and synthetic test data only.** Results are arithmetic estimates rather than clinical diagnoses or treatment recommendations. Do not submit patient identifiers or protected health information.
@@ -17,7 +19,7 @@ The browser calculator uses native JavaScript and no backend, Pyodide, analytics
 
 Open `web/index.html` in a modern browser and enter the required LVOT diameter, LVOT VTI, and heart rate. Optional measurement groups require their corresponding paired fields. The standalone calculator works without network access.
 
-GitHub Pages deployment is configured in `.github/workflows/pages.yml`. A public application link should be added only after GitHub Pages is enabled and the deployed workflow is verified.
+The live GitHub Pages calculator is deployed directly from `web/` and verified after deployment by automated HTTP checks of both the page and its JavaScript.
 
 ## Python calculator
 
